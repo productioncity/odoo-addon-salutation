@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+
+    volumes:
+      - ../..:/workspaces:cached
+
+    # Overrides default command so things don't shut down after the process ends.
+    command: sleep infinity
+
+    # Use "forwardPorts" in **devcontainer.json** to forward an app port locally.
+    # (Adding the "ports" property to this file will not forward from a Codespace.)
+
+  postgres:
+    image: postgis/postgis:latest
+    restart: unless-stopped
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${POSTGRES_DATABASE:-odoo}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-odoo}
+      - POSTGRES_USER=${POSTGRES_USER:-odoo}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+      - POSTGRES_SYNCHRONOUS_COMMIT=on
+    ports:
+      - 5432:5432
+
+    # Add "forwardPorts": ["5432"] to **devcontainer.json** to forward PostgreSQL locally.
+    # (Adding the "ports" property to this file will not forward from a Codespace.)
+
+  init-odoo-permissions:
+    image: busybox
+    volumes:
+      - odoo-filestore:/var/lib/odoo/filestore
+      - odoo-config:/etc/odoo
+      - odoo-sessions:/var/lib/odoo/sessions
+    command: ["sh", "-c", "chown -R 101:101 /var/lib/odoo/filestore /etc/odoo /var/lib/odoo/sessions"]
+
+  odoo:
+    image: odoo:17
+    depends_on:
+      - init-odoo-permissions
+      - postgres
+    volumes:
+      - ../salutation:/mnt/extra-addons/salutation:cached
+      - odoo-filestore:/var/lib/odoo/filestore:rw
+      - odoo-config:/etc/odoo:rw
+      - odoo-sessions:/var/lib/odoo/sessions
+    environment:
+      - HOST=postgres
+      - USER=${POSTGRES_USER:-odoo}
+      - PASSWORD=${POSTGRES_PASSWORD:-odoo}
+    ports:
+      - 8069:8069
+
+volumes:
+  postgres-data:
+  odoo-filestore:
+  odoo-config:
+  odoo-sessions:
