@@ -7,13 +7,13 @@ class ResPartner(models.Model):
     _inherit = 'res.partner'
 
     name_given: Optional[str] = fields.Char(
-        string="Given Name",
+        string="Given Name"
     )
     name_family: Optional[str] = fields.Char(
-        string="Family Name",
+        string="Family Name"
     )
     name_salutation: Optional[str] = fields.Char(
-        string="Salutation",
+        string="Salutation"
     )
 
     REVERSE_LANGUAGES = [
@@ -30,8 +30,8 @@ class ResPartner(models.Model):
     def _onchange_name(self) -> None:
         """
         Onchange method to update name_given, name_family, and name_salutation
-        based on the name field changes.
-        Automatically generates these fields if they are not set.
+        based on the name field changes. Automatically generates these fields
+        if they are not set.
         """
         for record in self:
             if record.company_type == 'individual':
@@ -74,10 +74,10 @@ class ResPartner(models.Model):
             'salutation': salutation,
         }
 
-    @api.model
-    def create(self, vals_list: List[Dict[str, Any]]) -> 'ResPartner':
+    @api.model_create_multi
+    def create(self, vals_list: List[Dict[str, Any]]) -> models.BaseModel:
         """
-        Overrides the create method to populate name parts if not overridden by user.
+        Overrides the create method to populate name parts if not overridden by the user.
         Handles batch creation.
 
         Args:
@@ -92,12 +92,12 @@ class ResPartner(models.Model):
                 vals.setdefault('name_given', name_parts['given'])
                 vals.setdefault('name_family', name_parts['family'])
                 vals.setdefault('name_salutation', name_parts['salutation'])
-        return super(ResPartner, self).create(vals_list)
+        return super().create(vals_list)
 
     def write(self, vals: Dict[str, Any]) -> bool:
         """
-        Overrides write method to update name parts if the name changes
-        and if not overridden by user.
+        Overrides the write method to update name parts if the name changes and if not
+        overridden by the user.
 
         Args:
             vals: Dictionary of values for updating the record.
@@ -105,7 +105,7 @@ class ResPartner(models.Model):
         Returns:
             True if the write operation was successful, False otherwise.
         """
-        result = super(ResPartner, self).write(vals)
+        result = super().write(vals)
         for record in self:
             if 'name' in vals and record.company_type == 'individual':
                 name_parts = record._generate_name_parts(vals.get('name', record.name))
@@ -122,8 +122,8 @@ class ResPartner(models.Model):
 
     def name_get(self) -> List[Tuple[int, str]]:
         """
-        Override the default name_get method to generate name parts
-        if they are not set, based on the contact's primary name field.
+        Override the default name_get method to generate name parts if they are not
+        set, based on the contact's primary name field.
 
         Returns:
             List of tuples containing record IDs and display names.
