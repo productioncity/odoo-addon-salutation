@@ -5,8 +5,9 @@
             <field name="model">res.partner</field>
             <field name="inherit_id" ref="base.view_partner_form"/>
             <field name="arch" type="xml">
-                <xpath expr="//form/sheet" position="inside">
-                    <div attrs="{'invisible': [('company_type', '=', 'company')]}">
+                <!-- Insert fields after the radio button for company_type and before the name field -->
+                <xpath expr="//field[@name='company_type']" position="after">
+                    <div invisible="context.get('default_company_type') == 'company'">
                         <group string="Salutation Info">
                             <field name="name_given"/>
                             <field name="name_family"/>
