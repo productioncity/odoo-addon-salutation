@@ -2,7 +2,7 @@
 
 # Base directories and specific files to include
 INCLUDE_DIRS=("salutation" ".devcontainer" ".github")
-INCLUDE_FILES=()
+INCLUDE_FILES=("README.md")
 
 # Output markdown file
 OUTPUT_FILE="llm.md"
