@@ -5,26 +5,25 @@
             <field name="model">res.partner</field>
             <field name="inherit_id" ref="base.view_partner_form"/>
             <field name="arch" type="xml">
-                <!-- Insert fields after the company field -->
                 <xpath expr="//span[@name='address_name']" position="before">
-                            <span class="o_form_label o_td_label" name="salutation_details_given" invisible="is_company">
-                                <b invisible="is_company">Given Name</b>
-                            </span>
-                            <div class="o_address_format" invisible="is_company">
-                                <field name="name_given" placeholder="e.g. Courtney" on_change="1"/>
-                            </div>
-                            <span class="o_form_label o_td_label" name="salutation_details_family" invisible="is_company">
-                                <b invisible="is_company">Family Name</b>
-                            </span>
-                            <div class="o_address_format" invisible="is_company">
-                                <field name="name_family" placeholder="e.g. Smith" on_change="1"/>
-                            </div>
-                            <span class="o_form_label o_td_label" name="salutation_details_salutation" invisible="is_company">
-                                <b invisible="is_company">Salutation</b>
-                            </span>
-                            <div class="o_address_format" invisible="is_company">
-                                <field name="name_salutation" placeholder="e.g. Courtney / Miss Smith" on_change="1"/>
-                            </div>
+                    <span class="o_form_label" name="salutation_details_given" invisible="is_company">
+                        <b invisible="is_company">Given Name</b>
+                    </span>
+                    <div invisible="is_company">
+                        <field name="name_given" placeholder="e.g. Courtney" on_change="1"/>
+                    </div>
+                    <span class="o_form_label" name="salutation_details_family" invisible="is_company">
+                        <b invisible="is_company">Family Name</b>
+                    </span>
+                    <div invisible="is_company">
+                        <field name="name_family" placeholder="e.g. Smith" on_change="1"/>
+                    </div>
+                    <span class="o_form_label" name="salutation_details_salutation" invisible="is_company">
+                        <b invisible="is_company">Salutation</b>
+                    </span>
+                    <div invisible="is_company">
+                        <field name="name_salutation" placeholder="e.g. Courtney / Miss Smith" on_change="1"/>
+                    </div>
                 </xpath>
             </field>
         </record>
