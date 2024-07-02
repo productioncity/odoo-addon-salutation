@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 from typing import Dict, Optional, Any, List, Tuple
 from odoo import models, fields, api
+import logging
+
+_logger = logging.getLogger(__name__)
 
 class ResPartner(models.Model):
     _inherit = 'res.partner'
@@ -80,22 +83,27 @@ class ResPartner(models.Model):
                 record.is_salutation_manual = False
 
     @api.model
-    def _generate_name_parts(self, name: Optional[str] = None, title: Optional[str] = None, lang: Optional[str] = None) -> Dict[str, str]:
+    def _generate_name_parts(
+        self, 
+        name: Optional[str] = None, 
+        title: Optional[str] = None, 
+        lang: Optional[str] = None
+    ) -> Dict[str, str]:
         """
         Generates name parts based on the contact's name and language settings.
 
         Args:
-            name: Name to generate parts from. Defaults to self.name.
-            title: Title to use for the salutation. Defaults to self.title.shortcut.
-            lang: Language code to use for generating name parts. Defaults to self.lang or self.env.user.lang.
+            name (Optional[str]): Name to generate parts from. Defaults to self.name.
+            title (Optional[str]): Title to use for the salutation. Defaults to self.title.shortcut.
+            lang (Optional[str]): Language code to use for generating name parts. Defaults to self.lang or self.env.user.lang.
 
         Returns:
-            A dictionary containing 'given', 'family', and 'salutation' name parts.
+            Dict[str, str]: A dictionary containing 'given', 'family', and 'salutation' name parts.
         """
         name = name or self.name or ''
         name_parts = name.split()
         lang = lang or self.lang or self.env.user.lang
-        title = title or self.title.shortcut if self.title else ''
+        title = title or (self.title.shortcut if self.title else '')
 
         if lang in self.REVERSE_LANGUAGES:
             given_name = name_parts[-1] if name_parts else ''
@@ -126,12 +134,17 @@ class ResPartner(models.Model):
         """
         for vals in vals_list:
             if vals.get('company_type', 'company') == 'person':
-                name_parts = self._generate_name_parts(vals.get('name', ''), vals.get('title', {}).get('shortcut', ''), vals.get('lang', ''))
-                if not vals.get('is_given_name_manual'):
+                name_parts = self._generate_name_parts(
+                    vals.get('name', ''), 
+                    vals.get('title', {}).get('shortcut', ''), 
+                    vals.get('lang', '')
+                )
+
+                if not vals.get('is_given_name_manual', False):
                     vals.setdefault('name_given', name_parts['given'])
-                if not vals.get('is_family_name_manual'):
+                if not vals.get('is_family_name_manual', False):
                     vals.setdefault('name_family', name_parts['family'])
-                if not vals.get('is_salutation_manual'):
+                if not vals.get('is_salutation_manual', False):
                     vals.setdefault('name_salutation', name_parts['salutation'])
         return super().create(vals_list)
 
@@ -144,19 +157,31 @@ class ResPartner(models.Model):
             vals: Dictionary of values for updating the record.
 
         Returns:
-            True if the write operation was successful, False otherwise.
+            bool: True if the write operation was successful, False otherwise.
         """
         if 'name' in vals:
             for record in self:
                 if record.company_type == 'person':
-                    name_parts = record._generate_name_parts(vals.get('name', record.name), vals.get('title', {}).get('shortcut', record.title.shortcut), vals.get('lang', record.lang))
-                    updates = {}
+                    title_shortcut: Optional[str] = (None if not record.title else record.title.shortcut)
+                    if 'title' in vals:
+                        title = self.env['res.partner.title'].browse(vals['title'])
+                        if title.exists():
+                            title_shortcut = title.shortcut
+
+                    name_parts: Dict[str, str] = record._generate_name_parts(
+                        vals['name'] if 'name' in vals else record.name,
+                        title_shortcut,
+                        vals.get('lang', record.lang)
+                    )
+                    updates: Dict[str, Any] = {}
+
                     if 'name_given' not in vals and not record.is_given_name_manual:
                         updates['name_given'] = name_parts['given']
                     if 'name_family' not in vals and not record.is_family_name_manual:
                         updates['name_family'] = name_parts['family']
                     if 'name_salutation' not in vals and not record.is_salutation_manual:
                         updates['name_salutation'] = name_parts['salutation']
+
                     if updates:
                         vals.update(updates)
         return super().write(vals)
@@ -187,8 +212,12 @@ class ResPartner(models.Model):
         """
         Method to update existing contacts to populate new fields.
         """
+        _logger.info("Starting to update existing contacts...")
+
         partners = self.search([])
         for partner in partners:
+            _logger.info(f"Processing partner: {partner.name}")
+
             if partner.company_type == 'person':
                 name_parts = partner._generate_name_parts()
                 updates = {}
@@ -198,8 +227,22 @@ class ResPartner(models.Model):
                     updates['name_family'] = name_parts['family']
                 if not partner.name_salutation and not partner.is_salutation_manual:
                     updates['name_salutation'] = name_parts['salutation']
+
                 if updates:
-                    partner.write(updates)
+                    _logger.info(f"Updating partner ({partner.id}) with data: {updates}")
+                    try:
+                        success = partner.write(updates)
+                        if success:
+                            _logger.info(f"Successfully updated partner ({partner.id})")
+                        else:
+                            _logger.error(f"Failed to update partner ({partner.id})")
+                        self.env.cr.commit()  # Ensure the transaction is saved.
+                    except Exception as e:
+                        _logger.exception(f"Exception when updating partner ({partner.id}): {str(e)}")
+                else:
+                    _logger.info(f"No updates needed for partner: {partner.name}")
+
+        _logger.info("Completed updating existing contacts.")
 
     def reset_name_parts(self) -> None:
         """

@@ -1,35 +1,48 @@
-# -*- coding: utf-8 -*-
 {
+    # The name of the addon
     'name': "salutation",
 
-    'summary': "Adds salutation fields to contacts",
+    # A summary of the addon
+    'summary': "Adds salutation, given name, and family name fields to contacts",
 
+    # A detailed description of the addon
     'description': """
-Adds salutation fields to contacts
+    This addon enhances the Contacts module in Odoo by adding the following fields:
+    - Salutation
+    - Given Name
+    - Family Name
+    
+    This helps in better categorisation and personalisation of contact records.
     """,
 
+    # Author information
     'author': "Production City",
     'website': "https://github.com/productioncity/odoo-addon-salutation",
 
-    # Categories can be used to filter modules in modules listing
-    # Check https://github.com/odoo/odoo/blob/15.0/odoo/addons/base/data/ir_module_category_data.xml
-    # for the full list
-    'category': 'Customizations',
+    # The license type for this addon (commercial license)
+    'license': "OPL-1",
+
+    # The category and version of the addon
+    'category': "Customizations",
     'version': '0.1',
 
-    # any module necessary for this one to work correctly
+    # Dependencies needed for this addon to work correctly
     'depends': ['base', 'contacts'],
 
-    # always loaded
+    # Data that is always loaded
     'data': [
-        # 'security/ir.model.access.csv',
         'views/views.xml',
         'views/templates.xml',
         'data/server_actions.xml',
     ],
-    # only loaded in demonstration mode
+    
+    # Data loaded in demonstration mode
     'demo': [
         'demo/demo.xml',
     ],
-}
 
+    # Image or icon for the addon
+    'images': [
+        'static/description/icon.png'
+    ],
+}
