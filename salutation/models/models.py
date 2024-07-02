@@ -1,15 +1,32 @@
 # -*- coding: utf-8 -*-
-from typing import Dict
+from typing import Dict, Optional
 from odoo import models, fields, api
 
 class ResPartner(models.Model):
     _inherit = 'res.partner'
 
-    name_given = fields.Char(string="Given Name", default=lambda self: self._default_name_given())
-    name_family = fields.Char(string="Family Name", default=lambda self: self._default_name_family())
-    name_salutation = fields.Char(string="Salutation", default=lambda self: self._default_name_salutation())
+    name_given = fields.Char(
+        string="Given Name",
+        default=lambda self: self._default_name_given(),
+    )
+    name_family = fields.Char(
+        string="Family Name",
+        default=lambda self: self._default_name_family(),
+    )
+    name_salutation = fields.Char(
+        string="Salutation",
+        default=lambda self: self._default_name_salutation(),
+    )
 
-    REVERSE_LANGUAGES = ['ko_KR', 'ja_JP']  # Languages where the given name appears last
+    REVERSE_LANGUAGES = [
+        'zh_CN',  # Chinese (Simplified)
+        'zh_TW',  # Chinese (Traditional)
+        'ko_KR',  # Korean
+        'ja_JP',  # Japanese
+        'vi_VN',  # Vietnamese
+        'hu_HU',  # Hungarian
+        'mn_MN',  # Mongolian
+    ]
 
     @api.model
     def _default_name_given(self) -> str:
@@ -33,14 +50,18 @@ class ResPartner(models.Model):
         return self._generate_name_parts()['salutation']
     
     @api.model
-    def _generate_name_parts(self) -> Dict[str, str]:
+    def _generate_name_parts(self, name: Optional[str] = None) -> Dict[str, str]:
         """
         Generates name parts based on the contact's name and language settings.
-
+        
+        Args:
+            name: Name to generate parts from. Defaults to self.name.
+        
         Returns:
-            Dict[str, str]: A dictionary containing 'given', 'family', and 'salutation' name parts.
+            A dictionary containing 'given', 'family', and 'salutation' name parts.
         """
-        name_parts = self.name.split() if self.name else []
+        name = name or self.name or ''
+        name_parts = name.split()
         lang = self.lang or self.env.user.lang or 'en_US'
         title = self.title.shortcut if self.title else ''
         
@@ -50,58 +71,51 @@ class ResPartner(models.Model):
         else:
             given_name = name_parts[0] if name_parts else ''
             family_name = name_parts[-1] if name_parts else ''
-
-        if title:
-            salutation = f"{title} {family_name}"
-        else:
-            salutation = given_name
+        
+        salutation = f"{title} {family_name}" if title else given_name
 
         return {
             'given': given_name,
             'family': family_name,
             'salutation': salutation
         }
-    
+
     @api.model
     def create(self, vals: Dict) -> 'ResPartner':
         """
-        Overrides the create method to populate name parts.
-
+        Overrides create method to populate name parts if not overridden by user.
+        
         Args:
-            vals (Dict): Values for the new record.
-
+            vals: Values for the new record.
+        
         Returns:
-            ResPartner: The created ResPartner record.
+            The created ResPartner record.
         """
-        if 'name_given' not in vals or not vals['name_given']:
+        if vals.get('company_type', 'company') != 'company':
             name_parts = self._generate_name_parts(vals.get('name', ''))
-            vals['name_given'] = name_parts['given']
-        if 'name_family' not in vals or not vals['name_family']:
-            name_parts = self._generate_name_parts(vals.get('name', ''))
-            vals['name_family'] = name_parts['family']
-        if 'name_salutation' not in vals or not vals['name_salutation']:
-            name_parts = self._generate_name_parts(vals.get('name', ''))
-            vals['name_salutation'] = name_parts['salutation']
+            vals.setdefault('name_given', name_parts['given'])
+            vals.setdefault('name_family', name_parts['family'])
+            vals.setdefault('name_salutation', name_parts['salutation'])
         return super().create(vals)
     
     def write(self, vals: Dict) -> bool:
         """
-        Overrides the write method to update name parts if the name changes.
-
+        Overrides write method to update name parts if the name changes and if not overridden by user.
+        
         Args:
-            vals (Dict): Values for the record update.
-
+            vals: Values for the record update.
+        
         Returns:
-            bool: True if the write operation was successful, False otherwise.
+            True if the write operation was successful, False otherwise.
         """
         result = super().write(vals)
         for record in self:
-            if 'name' in vals:
+            if record.company_type == 'individual' and 'name' in vals:
                 name_parts = record._generate_name_parts()
                 updates = {
-                    'name_given': name_parts['given'],
-                    'name_family': name_parts['family'],
-                    'name_salutation': name_parts['salutation']
+                    'name_given': vals.get('name_given', name_parts['given']),
+                    'name_family': vals.get('name_family', name_parts['family']),
+                    'name_salutation': vals.get('name_salutation', name_parts['salutation']),
                 }
                 super(ResPartner, record).write(updates)
         return result

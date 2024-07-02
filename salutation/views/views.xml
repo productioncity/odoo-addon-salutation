@@ -1,16 +1,18 @@
 <odoo>
     <data>
-        <record id="view_partner_form" model="ir.ui.view">
+        <record id="view_partner_form_inherit" model="ir.ui.view">
             <field name="name">res.partner.form.inherit.salutation</field>
             <field name="model">res.partner</field>
             <field name="inherit_id" ref="base.view_partner_form"/>
             <field name="arch" type="xml">
-                <xpath expr="//sheet" position="inside">
-                    <group string="Salutation Info">
-                        <field name="name_given"/>
-                        <field name="name_family"/>
-                        <field name="name_salutation"/>
-                    </group>
+                <xpath expr="//form/sheet" position="inside">
+                    <div attrs="{'invisible': [('company_type', '=', 'company')]}">
+                        <group string="Salutation Info">
+                            <field name="name_given"/>
+                            <field name="name_family"/>
+                            <field name="name_salutation"/>
+                        </group>
+                    </div>
                 </xpath>
             </field>
         </record>
