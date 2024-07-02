@@ -6,18 +6,46 @@
             <field name="inherit_id" ref="base.view_partner_form"/>
             <field name="arch" type="xml">
                 <xpath expr="//span[@name='address_name']" position="before">
+                    <field name="is_given_name_manual" invisible="1" on_change="1"/>
+                    <field name="is_family_name_manual" invisible="1" on_change="1"/>
+                    <field name="is_salutation_manual" invisible="1" on_change="1"/>
+                    <div invisible="is_company or (
+                        not is_given_name_manual and 
+                        not is_family_name_manual and 
+                        not is_salutation_manual and 
+                        (name_given != '' and name_family != '' and name_salutation != '')
+                    )">
+                        <button name="reset_name_parts"
+                            title="Reset name parts"
+                            type="object"
+                            icon="fa-undo"
+                            class="oe_highlight"/>
+                    </div>
+                    <div invisible="is_company or (
+                        not is_given_name_manual and 
+                        not is_family_name_manual and 
+                        not is_salutation_manual and 
+                        (name_given != '' and name_family != '' and name_salutation != '')
+                    )">
+                        <![CDATA[
+                        &nbsp;
+                        ]]>
+                    </div>
+
                     <span class="o_form_label" name="salutation_details_given" invisible="is_company">
-                        <b invisible="is_company">Given Name</b>
+                        <b invisible="is_company">Given<![CDATA[&nbsp;]]>Name</b>
                     </span>
                     <div invisible="is_company">
                         <field name="name_given" placeholder="e.g. Courtney" on_change="1"/>
                     </div>
+
                     <span class="o_form_label" name="salutation_details_family" invisible="is_company">
-                        <b invisible="is_company">Family Name</b>
+                        <b invisible="is_company">Family<![CDATA[&nbsp;]]>Name</b>
                     </span>
                     <div invisible="is_company">
                         <field name="name_family" placeholder="e.g. Smith" on_change="1"/>
                     </div>
+                    
                     <span class="o_form_label" name="salutation_details_salutation" invisible="is_company">
                         <b invisible="is_company">Salutation</b>
                     </span>
