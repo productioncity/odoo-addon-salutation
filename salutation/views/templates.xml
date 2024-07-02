@@ -1,0 +1,13 @@
+<odoo>
+    <data>
+        <!-- This template can be used for custom web pages -->
+        <template id="salutation_example_template" name="Salutation Example">
+            <t t-call="website.layout">
+                <div class="container">
+                    <h1>Salutation Example</h1>
+                    <p>Add your custom content here.</p>
+                </div>
+            </t>
+        </template>
+    </data>
+</odoo>
