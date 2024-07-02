@@ -69,6 +69,11 @@ To update existing contacts with the new fields, follow these steps:
     env['res.partner'].sudo()._update_existing_contacts()
     ```
 
+    - To exit the shell, run:
+    ```python
+    exit()
+    ```
+
 ## Development
 
 ### Cloning and Working on the Code
@@ -105,15 +110,22 @@ We provide a `.devcontainer` configuration for Visual Studio Code, which streaml
 2. **Reopen the Project in Container**  
    When prompted, reopen the project in the container.
 
-3. Initialise the Odoo instance
+3. Get a shall in the Odoo container
+
+```zsh
+docker exec -it odoo-addon-salutation_devcontainer-odoo-1 /bin/bash
+```
+
+4. Initialise the Odoo instance (in the container shell)
 
 ```bash
 odoo --database=odoo --db_user=${USER} --db_password=${PASSWORD} --db_host=postgres --db_port=5432 --stop-after-init --no-http -i base,contacts
+exit
 ```
 
 4. Restart Odoo
 
-```bash
+```zsh
 docker restart odoo-addon-salutation_devcontainer-odoo-1
 ```
 
@@ -123,7 +135,7 @@ If you change the addon and want to test it locally.
 
 1. Get a shall in the Odoo container
 
-```bash
+```zsh
 docker exec -it odoo-addon-salutation_devcontainer-odoo-1 /bin/bash
 ```
 
@@ -136,8 +148,22 @@ exit
 
 3. Then restart odoo
 
-```
+```zsh
 docker restart odoo-addon-salutation_devcontainer-odoo-1
+```
+
+##### Odoo Shell in Odoo Container
+
+1. Get a shall in the Odoo container
+
+```zsh
+docker exec -it odoo-addon-salutation_devcontainer-odoo-1 /bin/bash
+```
+
+2. Then, in the container update the addon
+
+```bash
+odoo shell --database=odoo --db_user=${USER} --db_password=${PASSWORD} --db_host=postgres --db_port=5432 --stop-after-init --no-http -d odoo
 ```
 
 ### Contributing
