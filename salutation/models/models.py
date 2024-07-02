@@ -34,7 +34,7 @@ class ResPartner(models.Model):
         if they are not set.
         """
         for record in self:
-            if record.company_type == 'individual':
+            if record.company_type == 'person':
                 name_parts = record._generate_name_parts(record.name)
                 if not record.name_given:
                     record.name_given = name_parts['given']
@@ -87,7 +87,7 @@ class ResPartner(models.Model):
             The created ResPartner records.
         """
         for vals in vals_list:
-            if vals.get('company_type', 'company') != 'company':
+            if vals.get('company_type', 'company') == 'person':
                 name_parts = self._generate_name_parts(vals.get('name', ''))
                 vals.setdefault('name_given', name_parts['given'])
                 vals.setdefault('name_family', name_parts['family'])
@@ -105,20 +105,20 @@ class ResPartner(models.Model):
         Returns:
             True if the write operation was successful, False otherwise.
         """
-        result = super().write(vals)
-        for record in self:
-            if 'name' in vals and record.company_type == 'individual':
-                name_parts = record._generate_name_parts(vals.get('name', record.name))
-                updates = {}
-                if not vals.get('name_given'):
-                    updates['name_given'] = name_parts['given']
-                if not vals.get('name_family'):
-                    updates['name_family'] = name_parts['family']
-                if not vals.get('name_salutation'):
-                    updates['name_salutation'] = name_parts['salutation']
-                if updates:
-                    super(ResPartner, record).write(updates)
-        return result
+        if 'name' in vals:
+            for record in self:
+                if record.company_type == 'person':
+                    name_parts = record._generate_name_parts(vals.get('name', record.name))
+                    updates = {}
+                    if not vals.get('name_given'):
+                        updates['name_given'] = name_parts['given']
+                    if not vals.get('name_family'):
+                        updates['name_family'] = name_parts['family']
+                    if not vals.get('name_salutation'):
+                        updates['name_salutation'] = name_parts['salutation']
+                    if updates:
+                        vals.update(updates)
+        return super().write(vals)
 
     def name_get(self) -> List[Tuple[int, str]]:
         """
@@ -130,7 +130,7 @@ class ResPartner(models.Model):
         """
         result: List[Tuple[int, str]] = []
         for record in self:
-            if record.company_type == 'individual':
+            if record.company_type == 'person':
                 if not record.name_given or not record.name_family or not record.name_salutation:
                     name_parts = record._generate_name_parts()
                     if not record.name_given:
