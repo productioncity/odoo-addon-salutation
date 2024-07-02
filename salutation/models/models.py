@@ -46,7 +46,12 @@ class ResPartner(models.Model):
         Onchange method to set the is_given_name_manual flag when the given name is changed.
         """
         for record in self:
-            record.is_given_name_manual = True
+            name_parts = record._generate_name_parts(record.name, record.title.shortcut if record.title else '', record.lang)
+            # If the value is not empty and the value is different from the generated value - set the manual flag
+            if record.name_given and record.name_given != name_parts['given']:
+                record.is_given_name_manual = True
+            else:
+                record.is_given_name_manual = False
 
     @api.onchange('name_family')
     def _onchange_name_family(self):
@@ -54,7 +59,12 @@ class ResPartner(models.Model):
         Onchange method to set the is_family_name_manual flag when the family name is changed.
         """
         for record in self:
-            record.is_family_name_manual = True
+            name_parts = record._generate_name_parts(record.name, record.title.shortcut if record.title else '', record.lang)
+            # If the value is not empty and the value is different from the generated value - set the manual flag
+            if record.name_family and record.name_family != name_parts['family']:
+                record.is_family_name_manual = True
+            else:
+                record.is_family_name_manual = False
 
     @api.onchange('name_salutation')
     def _onchange_name_salutation(self):
@@ -62,23 +72,30 @@ class ResPartner(models.Model):
         Onchange method to set the is_salutation_manual flag when the salutation is changed.
         """
         for record in self:
-            record.is_salutation_manual = True
+            name_parts = record._generate_name_parts(record.name, record.title.shortcut if record.title else '', record.lang)
+            # If the value is not empty and the value is different from the generated value - set the manual flag
+            if record.name_salutation and record.name_salutation != name_parts['salutation']:
+                record.is_salutation_manual = True
+            else:
+                record.is_salutation_manual = False
 
     @api.model
-    def _generate_name_parts(self, name: Optional[str] = None) -> Dict[str, str]:
+    def _generate_name_parts(self, name: Optional[str] = None, title: Optional[str] = None, lang: Optional[str] = None) -> Dict[str, str]:
         """
         Generates name parts based on the contact's name and language settings.
 
         Args:
             name: Name to generate parts from. Defaults to self.name.
+            title: Title to use for the salutation. Defaults to self.title.shortcut.
+            lang: Language code to use for generating name parts. Defaults to self.lang or self.env.user.lang.
 
         Returns:
             A dictionary containing 'given', 'family', and 'salutation' name parts.
         """
         name = name or self.name or ''
         name_parts = name.split()
-        lang = self.lang or self.env.user.lang or 'en_US'
-        title = self.title.shortcut if self.title else ''
+        lang = lang or self.lang or self.env.user.lang
+        title = title or self.title.shortcut if self.title else ''
 
         if lang in self.REVERSE_LANGUAGES:
             given_name = name_parts[-1] if name_parts else ''
@@ -109,7 +126,7 @@ class ResPartner(models.Model):
         """
         for vals in vals_list:
             if vals.get('company_type', 'company') == 'person':
-                name_parts = self._generate_name_parts(vals.get('name', ''))
+                name_parts = self._generate_name_parts(vals.get('name', ''), vals.get('title', {}).get('shortcut', ''), vals.get('lang', ''))
                 if not vals.get('is_given_name_manual'):
                     vals.setdefault('name_given', name_parts['given'])
                 if not vals.get('is_family_name_manual'):
@@ -132,7 +149,7 @@ class ResPartner(models.Model):
         if 'name' in vals:
             for record in self:
                 if record.company_type == 'person':
-                    name_parts = record._generate_name_parts(vals.get('name', record.name))
+                    name_parts = record._generate_name_parts(vals.get('name', record.name), vals.get('title', {}).get('shortcut', record.title.shortcut), vals.get('lang', record.lang))
                     updates = {}
                     if 'name_given' not in vals and not record.is_given_name_manual:
                         updates['name_given'] = name_parts['given']
