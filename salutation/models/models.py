@@ -119,3 +119,16 @@ class ResPartner(models.Model):
                 }
                 super(ResPartner, record).write(updates)
         return result
+    
+    def _update_existing_contacts(self):
+        """
+        Method to update existing contacts to populate new fields.
+        """
+        partners = self.search([])
+        for partner in partners:
+            name_parts = partner._generate_name_parts()
+            partner.write({
+                'name_given': name_parts['given'],
+                'name_family': name_parts['family'],
+                'name_salutation': name_parts['salutation'],
+            })
