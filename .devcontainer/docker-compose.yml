@@ -8,9 +8,12 @@ services:
 
     volumes:
       - ../..:/workspaces:cached
+      - odoo-enterprise:/opt/odoo/enterprise
 
     # Overrides default command so things don't shut down after the process ends.
     command: sleep infinity
+    env_file:
+      - ../.env
 
     # Use "forwardPorts" in **devcontainer.json** to forward an app port locally.
     # (Adding the "ports" property to this file will not forward from a Codespace.)
@@ -32,14 +35,15 @@ services:
 
     # Add "forwardPorts": ["5432"] to **devcontainer.json** to forward PostgreSQL locally.
     # (Adding the "ports" property to this file will not forward from a Codespace.)
-
+  
   init-odoo-permissions:
     image: busybox
     volumes:
       - odoo-filestore:/var/lib/odoo/filestore
       - odoo-config:/etc/odoo
       - odoo-sessions:/var/lib/odoo/sessions
-    command: ["sh", "-c", "chown -R 101:101 /var/lib/odoo/filestore /etc/odoo /var/lib/odoo/sessions"]
+      - odoo-enterprise:/opt/odoo/enterprise
+    command: ["sh", "-c", "chown -R 101:101 /var/lib/odoo/filestore /etc/odoo /var/lib/odoo/sessions /opt/odoo/enterprise; chmod 777 /opt/odoo/enterprise"]
 
   odoo:
     image: odoo:17
@@ -51,6 +55,9 @@ services:
       - odoo-filestore:/var/lib/odoo/filestore:rw
       - odoo-config:/etc/odoo:rw
       - odoo-sessions:/var/lib/odoo/sessions
+      - odoo-enterprise:/opt/odoo/enterprise
+    env_file:
+      - ../.env
     environment:
       - HOST=postgres
       - USER=${POSTGRES_USER:-odoo}
@@ -63,3 +70,4 @@ volumes:
   odoo-filestore:
   odoo-config:
   odoo-sessions:
+  odoo-enterprise:

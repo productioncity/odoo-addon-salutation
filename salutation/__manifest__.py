@@ -27,7 +27,7 @@
     'version': '0.1',
 
     # Dependencies needed for this addon to work correctly
-    'depends': ['base', 'contacts'],
+    'depends': ['base', 'contacts', 'marketing_automation'],
 
     # Data that is always loaded
     'data': [

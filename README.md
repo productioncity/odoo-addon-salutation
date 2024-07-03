@@ -119,7 +119,7 @@ docker exec -it odoo-addon-salutation_devcontainer-odoo-1 /bin/bash
 4. Initialise the Odoo instance (in the container shell)
 
 ```bash
-odoo --database=odoo --db_user=${USER} --db_password=${PASSWORD} --db_host=postgres --db_port=5432 --stop-after-init --no-http -i base,contacts
+odoo --database=odoo --db_user=${USER} --db_password=${PASSWORD} --db_host=postgres --db_port=5432 --stop-after-init --no-http -i base,contacts,marketing_automation
 exit
 ```
 

@@ -259,3 +259,33 @@ class ResPartner(models.Model):
                     'is_family_name_manual': False,
                     'is_salutation_manual': False,
                 })
+
+class MailTemplate(models.Model):
+    _inherit = 'mail.template'
+
+    @api.model
+    def _get_partner_fields(self):
+        """
+        Extend the partner fields shown as merge variables in email templates.
+        """
+        partner_fields = super(MailTemplate, self)._get_partner_fields()
+        partner_fields.update({
+            'name_given': 'Given Name',
+            'name_family': 'Family Name',
+            'name_salutation': 'Salutation'
+        })
+        return partner_fields
+
+class MarketingAutomation(models.Model):
+    _inherit = 'marketing.activity'
+
+    @api.model
+    def _get_recipient_available_fields(self):
+        """
+        Extend the recipient fields for marketing automation activities.
+        """
+        fields = super(MarketingAutomation, self)._get_recipient_available_fields()
+        fields.append(('name_given', 'Given Name'))
+        fields.append(('name_family', 'Family Name'))
+        fields.append(('name_salutation', 'Salutation'))
+        return fields
