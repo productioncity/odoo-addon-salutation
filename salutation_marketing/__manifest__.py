@@ -1,18 +1,17 @@
 {
     # The name of the addon
-    'name': "salutation",
+    'name': "salutation_marketing",
 
     # A summary of the addon
-    'summary': "Adds salutation, given name, and family name fields to contacts",
+    'summary': "Adds salutation fields, given name, and family name fields to marketing automation emails.",
 
     # A detailed description of the addon
     'description': """
-    This addon enhances the Contacts module in Odoo by adding the following fields:
+    This addon enhances the Marketing Automation module in Odoo by adding the following fields to emails:
     - Salutation
     - Given Name
     - Family Name
-    
-    This helps in better categorisation and personalisation of contact records.
+
     """,
 
     # Author information
@@ -24,21 +23,17 @@
 
     # The category and version of the addon
     'category': "Customizations",
-    'version': '0.5',
+    'version': '0.6',
 
     # Dependencies needed for this addon to work correctly
-    'depends': ['base', 'contacts'],
+    'depends': ['base', 'contacts', 'salutation'],
 
     # Data that is always loaded
     'data': [
-        'views/views.xml',
-        'views/templates.xml',
-        'data/server_actions.xml',
     ],
     
     # Data loaded in demonstration mode
     'demo': [
-        'demo/demo.xml',
     ],
 
     # Image or icon for the addon
