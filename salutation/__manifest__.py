@@ -45,4 +45,7 @@
     'images': [
         'static/description/icon.png'
     ],
+    'post_load': 'post_load_hook',
+    'pre_init_hook': 'pre_init_check',
+    'post_init_hook': 'post_init_hook',
 }

@@ -5,6 +5,7 @@
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "app",
 	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+	"initializeCommand": "touch ${localWorkspaceFolder}/.env",
 	"features": {
 		"ghcr.io/devcontainers/features/common-utils:2": {
 			"installZsh": true,

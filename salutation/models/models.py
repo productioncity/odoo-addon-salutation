@@ -1,9 +1,45 @@
 # -*- coding: utf-8 -*-
-from typing import Dict, Optional, Any, List, Tuple
+from typing import Dict, Optional, List, Tuple
 from odoo import models, fields, api
 import logging
 
 _logger = logging.getLogger(__name__)
+
+def is_module_installed(env: api.Environment, module_name: str) -> bool:
+    """Check if a module is installed.
+
+    Args:
+        env (api.Environment): Odoo environment instance.
+        module_name (str): Name of the module.
+
+    Returns:
+        bool: Returns True if the module is installed, otherwise False.
+    """
+    return env['ir.module.module'].search_count([('name', '=', module_name), ('state', '=', 'installed')]) > 0
+
+def post_load_hook() -> None:
+    """Post Load Hook for actions requiring no cursor access."""
+    _logger.info("Executing post load hook")
+
+def pre_init_check(cr: models.BaseModel) -> None:
+    """Pre-Init check to validate necessary conditions before installing the module.
+
+    Args:
+        cr (models.BaseModel): Cursor object for interacting with the database.
+    """
+    _logger.info("Executing pre init check")
+
+def post_init_hook(env: api.Environment) -> None:
+    """Post Init Hook for actions requiring database access after module installation.
+
+    Args:
+        env (api.Environment): Odoo environment instance.
+    """
+    _logger.info("Executing post init hook")
+    assert isinstance(env, api.Environment), f"env is not a valid Environment, found: {type(env)}"
+    
+    if is_module_installed(env, 'marketing_automation'):
+        from . import marketing_automation_extension
 
 class ResPartner(models.Model):
     _inherit = 'res.partner'
@@ -16,7 +52,7 @@ class ResPartner(models.Model):
     is_family_name_manual: bool = fields.Boolean(string="Is Family Name Manual", default=False)
     is_salutation_manual: bool = fields.Boolean(string="Is Salutation Manual", default=False)
 
-    REVERSE_LANGUAGES = [
+    REVERSE_LANGUAGES: List[str] = [
         'zh_CN',  # Chinese (Simplified)
         'zh_TW',  # Chinese (Traditional)
         'ko_KR',  # Korean
@@ -28,8 +64,7 @@ class ResPartner(models.Model):
 
     @api.onchange('name', 'lang', 'title')
     def _onchange_name(self) -> None:
-        """
-        Onchange method to update name_given, name_family, and name_salutation
+        """Onchange method to update name_given, name_family, and name_salutation
         based on the name field changes. Automatically generates these fields
         if they are not set or not manually overridden.
         """
@@ -44,39 +79,30 @@ class ResPartner(models.Model):
                     record.name_salutation = name_parts['salutation']
 
     @api.onchange('name_given')
-    def _onchange_name_given(self):
-        """
-        Onchange method to set the is_given_name_manual flag when the given name is changed.
-        """
+    def _onchange_name_given(self) -> None:
+        """Onchange method to set the is_given_name_manual flag when the given name is changed."""
         for record in self:
             name_parts = record._generate_name_parts(record.name, record.title.shortcut if record.title else '', record.lang)
-            # If the value is not empty and the value is different from the generated value - set the manual flag
             if record.name_given and record.name_given != name_parts['given']:
                 record.is_given_name_manual = True
             else:
                 record.is_given_name_manual = False
 
     @api.onchange('name_family')
-    def _onchange_name_family(self):
-        """
-        Onchange method to set the is_family_name_manual flag when the family name is changed.
-        """
+    def _onchange_name_family(self) -> None:
+        """Onchange method to set the is_family_name_manual flag when the family name is changed."""
         for record in self:
             name_parts = record._generate_name_parts(record.name, record.title.shortcut if record.title else '', record.lang)
-            # If the value is not empty and the value is different from the generated value - set the manual flag
             if record.name_family and record.name_family != name_parts['family']:
                 record.is_family_name_manual = True
             else:
                 record.is_family_name_manual = False
 
     @api.onchange('name_salutation')
-    def _onchange_name_salutation(self):
-        """
-        Onchange method to set the is_salutation_manual flag when the salutation is changed.
-        """
+    def _onchange_name_salutation(self) -> None:
+        """Onchange method to set the is_salutation_manual flag when the salutation is changed."""
         for record in self:
             name_parts = record._generate_name_parts(record.name, record.title.shortcut if record.title else '', record.lang)
-            # If the value is not empty and the value is different from the generated value - set the manual flag
             if record.name_salutation and record.name_salutation != name_parts['salutation']:
                 record.is_salutation_manual = True
             else:
@@ -89,8 +115,7 @@ class ResPartner(models.Model):
         title: Optional[str] = None, 
         lang: Optional[str] = None
     ) -> Dict[str, str]:
-        """
-        Generates name parts based on the contact's name and language settings.
+        """Generates name parts based on the contact's name and language settings.
 
         Args:
             name (Optional[str]): Name to generate parts from. Defaults to self.name.
@@ -117,20 +142,19 @@ class ResPartner(models.Model):
         return {
             'given': given_name,
             'family': family_name,
-            'salutation': salutation,
+            'salutation': salutation
         }
 
     @api.model_create_multi
-    def create(self, vals_list: List[Dict[str, Any]]) -> models.BaseModel:
-        """
-        Overrides the create method to populate name parts if not overridden by the user.
+    def create(self, vals_list: List[Dict[str, str]]) -> models.BaseModel:
+        """Overrides the create method to populate name parts if not overridden by the user.
         Handles batch creation.
 
         Args:
-            vals_list: List of dictionaries of values for creating new records.
+            vals_list (List[Dict[str, str]]): List of dictionaries of values for creating new records.
 
         Returns:
-            The created ResPartner records.
+            models.BaseModel: The created ResPartner records.
         """
         for vals in vals_list:
             if vals.get('company_type', 'company') == 'person':
@@ -148,16 +172,15 @@ class ResPartner(models.Model):
                     vals.setdefault('name_salutation', name_parts['salutation'])
         return super().create(vals_list)
 
-    def write(self, vals: Dict[str, Any]) -> bool:
-        """
-        Overrides the write method to update name parts if the name changes and if not
+    def write(self, vals: Dict[str, str]) -> bool:
+        """Overrides the write method to update name parts if the name changes and if not
         overridden by the user.
 
         Args:
-            vals: Dictionary of values for updating the record.
+            vals (Dict[str, str]): Dictionary of values for updating the record.
 
         Returns:
-            bool: True if the write operation was successful, False otherwise.
+            bool: Returns True if the write operation was successful, False otherwise.
         """
         if 'name' in vals:
             for record in self:
@@ -173,7 +196,7 @@ class ResPartner(models.Model):
                         title_shortcut,
                         vals.get('lang', record.lang)
                     )
-                    updates: Dict[str, Any] = {}
+                    updates: Dict[str, str] = {}
 
                     if 'name_given' not in vals and not record.is_given_name_manual:
                         updates['name_given'] = name_parts['given']
@@ -187,12 +210,11 @@ class ResPartner(models.Model):
         return super().write(vals)
 
     def name_get(self) -> List[Tuple[int, str]]:
-        """
-        Override the default name_get method to generate name parts if they are not
+        """Override the default name_get method to generate name parts if they are not
         set, based on the contact's primary name field.
 
         Returns:
-            List of tuples containing record IDs and display names.
+            List[Tuple[int, str]]: List of tuples containing record IDs and display names.
         """
         result: List[Tuple[int, str]] = []
         for record in self:
@@ -209,9 +231,7 @@ class ResPartner(models.Model):
         return result
 
     def _update_existing_contacts(self) -> None:
-        """
-        Method to update existing contacts to populate new fields.
-        """
+        """Method to update existing contacts to populate new fields."""
         _logger.info("Starting to update existing contacts...")
 
         partners = self.search([])
@@ -220,7 +240,7 @@ class ResPartner(models.Model):
 
             if partner.company_type == 'person':
                 name_parts = partner._generate_name_parts()
-                updates = {}
+                updates: Dict[str, str] = {}
                 if not partner.name_given and not partner.is_given_name_manual:
                     updates['name_given'] = name_parts['given']
                 if not partner.name_family and not partner.is_family_name_manual:
@@ -245,9 +265,7 @@ class ResPartner(models.Model):
         _logger.info("Completed updating existing contacts.")
 
     def reset_name_parts(self) -> None:
-        """
-        Method to reset name parts and their manual flags to auto-generated values.
-        """
+        """Method to reset name parts and their manual flags to auto-generated values."""
         for record in self:
             if record.company_type == 'person':
                 name_parts = record._generate_name_parts()
@@ -259,3 +277,21 @@ class ResPartner(models.Model):
                     'is_family_name_manual': False,
                     'is_salutation_manual': False,
                 })
+
+class MailTemplate(models.Model):
+    _inherit = 'mail.template'
+
+    @api.model
+    def _get_partner_fields(self) -> Dict[str, str]:
+        """Extend the partner fields shown as merge variables in email templates.
+
+        Returns:
+            Dict[str, str]: Dictionary of partner fields including given name, family name, and salutation.
+        """
+        partner_fields = super()._get_partner_fields()
+        partner_fields.update({
+            'name_given': 'Given Name',
+            'name_family': 'Family Name',
+            'name_salutation': 'Salutation'
+        })
+        return partner_fields
