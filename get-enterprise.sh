@@ -63,6 +63,8 @@ fetch_odoo_enterprise() {
             rm -rf /tmp/odoo /tmp/odoo-enterprise.tar.gz
             sudo chown -R 101:101 /opt/odoo/enterprise
             log_message "INFO" "Odoo Enterprise addons are up-to-date."
+
+            enable_enterprise_addons
         else
             log_message "ERROR" "No valid Odoo Enterprise download URL found. Please check the subscription code (env:ODOO_SUBSCRIPTION_CODE) or try again later."
             exit 1

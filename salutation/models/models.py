@@ -1,9 +1,34 @@
 # -*- coding: utf-8 -*-
 from typing import Dict, Optional, Any, List, Tuple
-from odoo import models, fields, api
+from odoo import models, fields, api, SUPERUSER_ID, sql_db
 import logging
 
 _logger = logging.getLogger(__name__)
+
+def is_module_installed(env, module_name):
+    """Check if a module is installed."""
+    return env['ir.module.module'].search_count([('name', '=', module_name), ('state', '=', 'installed')]) > 0
+
+def post_load_hook():
+    """Post Load Hook for actions requiring no cursor access."""
+    _logger.info("Executing post load hook")
+    # Example: monkey-patch a method
+    # SomeModel.some_method = custom_handler
+
+def pre_init_check(cr):
+    """Pre-Init check to validate necessary conditions before installing the module."""
+    _logger.info("Executing pre init check")
+
+def post_init_hook(env):
+    """Post Init Hook for actions requiring database access after module installation."""
+    _logger.info("Executing post init hook")
+
+    # Checking the type of env to ensure it's an instance of api.Environment
+    assert isinstance(env, api.Environment), f"env is not a valid Environment, found: {type(env)}"
+    
+    if is_module_installed(env, 'marketing_automation'):
+        # Only try to import if the check for module installation succeeded
+        from . import marketing_automation_extension
 
 class ResPartner(models.Model):
     _inherit = 'res.partner'
@@ -275,17 +300,3 @@ class MailTemplate(models.Model):
             'name_salutation': 'Salutation'
         })
         return partner_fields
-
-class MarketingAutomation(models.Model):
-    _inherit = 'marketing.activity'
-
-    @api.model
-    def _get_recipient_available_fields(self):
-        """
-        Extend the recipient fields for marketing automation activities.
-        """
-        fields = super(MarketingAutomation, self)._get_recipient_available_fields()
-        fields.append(('name_given', 'Given Name'))
-        fields.append(('name_family', 'Family Name'))
-        fields.append(('name_salutation', 'Salutation'))
-        return fields
