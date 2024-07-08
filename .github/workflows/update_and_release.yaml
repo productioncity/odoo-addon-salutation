@@ -55,7 +55,7 @@ jobs:
       run: |
         set -e
         echo "Creating salutation.zip..."
-        zip -r ../salutation.zip salutation || { 
+        zip -r salutation.zip salutation || { 
           echo "Failed to create salutation.zip!"; 
           exit 1; 
         }
@@ -64,7 +64,7 @@ jobs:
       run: |
         set -e
         echo "Creating salutation_marketing.zip..."
-        zip -r ../salutation_marketing.zip salutation_marketing || { 
+        zip -r salutation_marketing.zip salutation_marketing || { 
           echo "Failed to create salutation_marketing.zip!"; 
           exit 1; 
         }
