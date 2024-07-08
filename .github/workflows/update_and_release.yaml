@@ -35,20 +35,36 @@ jobs:
 
     - name: Update version in salutation manifest
       run: |
+        if [[ -z "${VERSION_PARTS}" ]]; then
+          echo "VERSION_PARTS not set. Exiting."
+          exit 1
+        fi
         sed -i "s/^\(\s*'version':\s*'\)[0-9.]*\('.*\)$/\1${VERSION_PARTS}\2/" salutation/__manifest__.py
 
     - name: Update version in salutation_marketing manifest
       run: |
+        if [[ -z "${VERSION_PARTS}" ]]; then
+          echo "VERSION_PARTS not set. Exiting."
+          exit 1
+        fi
         sed -i "s/^\(\s*'version':\s*'\)[0-9.]*\('.*\)$/\1${VERSION_PARTS}\2/" salutation_marketing/__manifest__.py
 
     - name: Create salutation.zip
       run: |
+        if [[ ! -d "salutation" ]]; then
+          echo "Salutation directory does not exist. Exiting."
+          exit 1
+        fi
         cd salutation
         zip -r ../salutation.zip .
         cd ..
 
     - name: Create salutation_marketing.zip
       run: |
+        if [[ ! -d "salutation_marketing" ]]; then
+          echo "Salutation marketing directory does not exist. Exiting."
+          exit 1
+        fi
         cd salutation_marketing
         zip -r ../salutation_marketing.zip .
         cd ..
@@ -68,9 +84,14 @@ jobs:
     - name: Create GitHub Release
       id: create_release
       uses: actions/github-script@v6
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         script: |
           const version = process.env.VERSION_NAME;
+          if (!version) {
+            throw new Error("VERSION_NAME environment variable not set.");
+          }
           const releaseResponse = await github.rest.repos.createRelease({
             owner: context.repo.owner,
             repo: context.repo.repo,
@@ -84,23 +105,36 @@ jobs:
 
     - name: Upload assets to release
       uses: actions/github-script@v6
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         script: |
           const fs = require('fs');
-          const path = require('path');
           const uploadUrl = core.getInput('upload_url');
-          
-          for (const file of ["salutation.zip", "salutation_marketing.zip"]) {
-            const filePath = path.join(process.cwd(), file);
+          if (!uploadUrl) {
+            throw new Error("Upload URL not set.");
+          }
+
+          const uploadAsset = async (filePath, fileName) => {
+            if (!fs.existsSync(filePath)) {
+              throw new Error(`${filePath} does not exist.`);
+            }
+
             const fileBuffer = fs.readFileSync(filePath);
-            
             await github.rest.repos.uploadReleaseAsset({
               url: uploadUrl,
               headers: {
                 'content-length': fileBuffer.length,
                 'content-type': 'application/zip'
               },
-              name: file,
+              name: fileName,
               data: fileBuffer
             });
+          };
+
+          try {
+            await uploadAsset('salutation.zip', 'salutation.zip');
+            await uploadAsset('salutation_marketing.zip', 'salutation_marketing.zip');
+          } catch (error) {
+            core.setFailed(`Asset upload failed: ${error.message}`);
           }
