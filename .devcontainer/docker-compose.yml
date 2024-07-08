@@ -52,6 +52,7 @@ services:
       - postgres
     volumes:
       - ../salutation:/mnt/extra-addons/salutation:cached
+      - ../salutation_marketing:/mnt/extra-addons/salutation_marketing:cached
       - odoo-filestore:/var/lib/odoo/filestore:rw
       - odoo-config:/etc/odoo:rw
       - odoo-sessions:/var/lib/odoo/sessions

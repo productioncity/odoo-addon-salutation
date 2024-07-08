@@ -1,45 +1,9 @@
 # -*- coding: utf-8 -*-
-from typing import Dict, Optional, List, Tuple
+from typing import Any, Dict, List, Optional, Union, Tuple
 from odoo import models, fields, api
 import logging
 
 _logger = logging.getLogger(__name__)
-
-def is_module_installed(env: api.Environment, module_name: str) -> bool:
-    """Check if a module is installed.
-
-    Args:
-        env (api.Environment): Odoo environment instance.
-        module_name (str): Name of the module.
-
-    Returns:
-        bool: Returns True if the module is installed, otherwise False.
-    """
-    return env['ir.module.module'].search_count([('name', '=', module_name), ('state', '=', 'installed')]) > 0
-
-def post_load_hook() -> None:
-    """Post Load Hook for actions requiring no cursor access."""
-    _logger.info("Executing post load hook")
-
-def pre_init_check(cr: models.BaseModel) -> None:
-    """Pre-Init check to validate necessary conditions before installing the module.
-
-    Args:
-        cr (models.BaseModel): Cursor object for interacting with the database.
-    """
-    _logger.info("Executing pre init check")
-
-def post_init_hook(env: api.Environment) -> None:
-    """Post Init Hook for actions requiring database access after module installation.
-
-    Args:
-        env (api.Environment): Odoo environment instance.
-    """
-    _logger.info("Executing post init hook")
-    assert isinstance(env, api.Environment), f"env is not a valid Environment, found: {type(env)}"
-    
-    if is_module_installed(env, 'marketing_automation'):
-        from . import marketing_automation_extension
 
 class ResPartner(models.Model):
     _inherit = 'res.partner'
@@ -82,7 +46,9 @@ class ResPartner(models.Model):
     def _onchange_name_given(self) -> None:
         """Onchange method to set the is_given_name_manual flag when the given name is changed."""
         for record in self:
-            name_parts = record._generate_name_parts(record.name, record.title.shortcut if record.title else '', record.lang)
+            name_parts = record._generate_name_parts(
+                record.name, record.title.shortcut if record.title else '', record.lang
+            )
             if record.name_given and record.name_given != name_parts['given']:
                 record.is_given_name_manual = True
             else:
@@ -92,7 +58,9 @@ class ResPartner(models.Model):
     def _onchange_name_family(self) -> None:
         """Onchange method to set the is_family_name_manual flag when the family name is changed."""
         for record in self:
-            name_parts = record._generate_name_parts(record.name, record.title.shortcut if record.title else '', record.lang)
+            name_parts = record._generate_name_parts(
+                record.name, record.title.shortcut if record.title else '', record.lang
+            )
             if record.name_family and record.name_family != name_parts['family']:
                 record.is_family_name_manual = True
             else:
@@ -102,7 +70,9 @@ class ResPartner(models.Model):
     def _onchange_name_salutation(self) -> None:
         """Onchange method to set the is_salutation_manual flag when the salutation is changed."""
         for record in self:
-            name_parts = record._generate_name_parts(record.name, record.title.shortcut if record.title else '', record.lang)
+            name_parts = record._generate_name_parts(
+                record.name, record.title.shortcut if record.title else '', record.lang
+            )
             if record.name_salutation and record.name_salutation != name_parts['salutation']:
                 record.is_salutation_manual = True
             else:
@@ -142,16 +112,16 @@ class ResPartner(models.Model):
         return {
             'given': given_name,
             'family': family_name,
-            'salutation': salutation
+            'salutation': salutation,
         }
 
     @api.model_create_multi
-    def create(self, vals_list: List[Dict[str, str]]) -> models.BaseModel:
+    def create(self, vals_list: List[Dict[str, Any]]) -> models.BaseModel:
         """Overrides the create method to populate name parts if not overridden by the user.
         Handles batch creation.
 
         Args:
-            vals_list (List[Dict[str, str]]): List of dictionaries of values for creating new records.
+            vals_list (List[Dict[str, Any]]): List of dictionaries of values for creating new records.
 
         Returns:
             models.BaseModel: The created ResPartner records.
@@ -163,7 +133,6 @@ class ResPartner(models.Model):
                     vals.get('title', {}).get('shortcut', ''), 
                     vals.get('lang', '')
                 )
-
                 if not vals.get('is_given_name_manual', False):
                     vals.setdefault('name_given', name_parts['given'])
                 if not vals.get('is_family_name_manual', False):
@@ -172,12 +141,12 @@ class ResPartner(models.Model):
                     vals.setdefault('name_salutation', name_parts['salutation'])
         return super().create(vals_list)
 
-    def write(self, vals: Dict[str, str]) -> bool:
-        """Overrides the write method to update name parts if the name changes and if not
-        overridden by the user.
+    def write(self, vals: Dict[str, Any]) -> bool:
+        """Overrides the write method to update name parts if the name changes
+        and if not overridden by the user.
 
         Args:
-            vals (Dict[str, str]): Dictionary of values for updating the record.
+            vals (Dict[str, Any]): Dictionary of values for updating the record.
 
         Returns:
             bool: Returns True if the write operation was successful, False otherwise.
@@ -185,13 +154,13 @@ class ResPartner(models.Model):
         if 'name' in vals:
             for record in self:
                 if record.company_type == 'person':
-                    title_shortcut: Optional[str] = (None if not record.title else record.title.shortcut)
+                    title_shortcut = (None if not record.title else record.title.shortcut)
                     if 'title' in vals:
                         title = self.env['res.partner.title'].browse(vals['title'])
                         if title.exists():
                             title_shortcut = title.shortcut
 
-                    name_parts: Dict[str, str] = record._generate_name_parts(
+                    name_parts = record._generate_name_parts(
                         vals['name'] if 'name' in vals else record.name,
                         title_shortcut,
                         vals.get('lang', record.lang)
@@ -219,14 +188,13 @@ class ResPartner(models.Model):
         result: List[Tuple[int, str]] = []
         for record in self:
             if record.company_type == 'person':
-                if not record.name_given or not record.name_family or not record.name_salutation:
-                    name_parts = record._generate_name_parts()
-                    if not record.name_given and not record.is_given_name_manual:
-                        record.name_given = name_parts['given']
-                    if not record.name_family and not record.is_family_name_manual:
-                        record.name_family = name_parts['family']
-                    if not record.name_salutation and not record.is_salutation_manual:
-                        record.name_salutation = name_parts['salutation']
+                name_parts = record._generate_name_parts()
+                if not record.name_given and not record.is_given_name_manual:
+                    record.name_given = name_parts['given']
+                if not record.name_family and not record.is_family_name_manual:
+                    record.name_family = name_parts['family']
+                if not record.name_salutation and not record.is_salutation_manual:
+                    record.name_salutation = name_parts['salutation']
             result.append((record.id, record.name))
         return result
 

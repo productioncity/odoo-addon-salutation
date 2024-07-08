@@ -1,7 +1,7 @@
 #!/usr/bin/env zsh
 
 # Base directories and specific files to include
-INCLUDE_DIRS=("salutation" ".devcontainer" ".github")
+INCLUDE_DIRS=("salutation" "salutation_marketing" ".devcontainer" ".github")
 INCLUDE_FILES=("README.md" "get-enterprise.sh")
 
 # Output markdown file
