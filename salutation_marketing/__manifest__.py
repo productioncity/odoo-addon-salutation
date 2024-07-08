@@ -26,7 +26,7 @@
     'version': '0.6',
 
     # Dependencies needed for this addon to work correctly
-    'depends': ['base', 'contacts', 'salutation'],
+    'depends': ['base', 'contacts', 'marketing_automation', 'salutation'],
 
     # Data that is always loaded
     'data': [
