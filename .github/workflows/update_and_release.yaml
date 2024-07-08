@@ -1,94 +1,95 @@
-name: Update Manifest and Release
+name: Update Manifest and Create Release
 
 on:
   push:
     tags:
-      - 'v*.*.*.*'
+      - 'v*.*.*.*'  # Match tags like v1.0.0.0
 
 permissions:
-  contents: write
+  contents: write  # Ensures the GITHUB_TOKEN has necessary permissions
 
 jobs:
-  release:
+  build:
+    name: Create Release
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.8'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
 
-    - name: Extract version number from tag
-      id: extract_version
-      run: |
-        if [[ "${GITHUB_REF}" =~ ^refs/tags/v([0-9]+)\.([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
-          echo "VERSION_PARTS=${BASH_REMATCH[3]}.${BASH_REMATCH[4]}" >> $GITHUB_ENV
-          echo "Found version: ${VERSION_PARTS}"
-        else
-          echo "Tag format is invalid!"
-          exit 1
-        fi
+      - name: Extract version number from tag
+        id: extract_version
+        run: |
+          if [[ "${GITHUB_REF}" =~ ^refs/tags/v([0-9]+)\.([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "VERSION_PARTS=${BASH_REMATCH[3]}.${BASH_REMATCH[4]}" >> $GITHUB_ENV
+            echo "Found version: ${VERSION_PARTS}"
+          else
+            echo "Tag format is invalid!"
+            exit 1
+          fi
 
-    - name: Update version in salutation manifest
-      run: |
-        sed -i "s/^\(\s*'version':\s*'\)[0-9.]*\('.*\)$/\1${VERSION_PARTS}\2/" salutation/__manifest__.py
+      - name: Update version in salutation manifest
+        run: |
+          sed -i "s/^\(\s*'version':\s*'\)[0-9.]*\('.*\)$/\1${VERSION_PARTS}\2/" salutation/__manifest__.py
 
-    - name: Update version in salutation_marketing manifest
-      run: |
-        sed -i "s/^\(\s*'version':\s*'\)[0-9.]*\('.*\)$/\1${VERSION_PARTS}\2/" salutation_marketing/__manifest__.py
+      - name: Update version in salutation_marketing manifest
+        run: |
+          sed -i "s/^\(\s*'version':\s*'\)[0-9.]*\('.*\)$/\1${VERSION_PARTS}\2/" salutation_marketing/__manifest__.py
 
-    - name: Create salutation.zip
-      run: |
-        cd salutation
-        zip -r ../salutation.zip .
-        cd ..
+      - name: Create salutation.zip
+        run: |
+          cd salutation
+          zip -r ../salutation.zip .
+          cd ..
 
-    - name: Create salutation_marketing.zip
-      run: |
-        cd salutation_marketing
-        zip -r ../salutation_marketing.zip .
-        cd ..
+      - name: Create salutation_marketing.zip
+        run: |
+          cd salutation_marketing
+          zip -r ../salutation_marketing.zip .
+          cd ..
 
-    - name: Upload salutation.zip
-      uses: actions/upload-artifact@v3
-      with:
-        name: salutation.zip
-        path: salutation.zip
+      - name: Upload salutation.zip as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: salutation.zip
+          path: salutation.zip
 
-    - name: Upload salutation_marketing.zip
-      uses: actions/upload-artifact@v3
-      with:
-        name: salutation_marketing.zip
-        path: salutation_marketing.zip
+      - name: Upload salutation_marketing.zip as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: salutation_marketing.zip
+          path: salutation_marketing.zip
 
-    - name: Create GitHub Release
-      id: create_release
-      uses: actions/create-release@v1
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        body: |
-          Release for version ${{ github.ref }}.
-        draft: false
-        prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+            Release for version ${{ github.ref }}.
+          draft: false
+          prerelease: false
 
-    - name: Upload assets to release
-      uses: actions/upload-release-asset@v1
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./salutation.zip
-        asset_name: salutation.zip
-        asset_content_type: application/zip
+      - name: Upload salutation.zip to release
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./salutation.zip
+          asset_name: salutation.zip
+          asset_content_type: application/zip
 
-    - name: Upload assets to release
-      uses: actions/upload-release-asset@v1
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./salutation_marketing.zip
-        asset_name: salutation_marketing.zip
-        asset_content_type: application/zip
+      - name: Upload salutation_marketing.zip to release
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./salutation_marketing.zip
+          asset_name: salutation_marketing.zip
+          asset_content_type: application/zip
