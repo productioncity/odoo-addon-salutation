@@ -35,63 +35,69 @@ jobs:
 
     - name: Update version in salutation manifest
       run: |
-        if [[ -z "${VERSION_PARTS}" ]]; then
-          echo "VERSION_PARTS not set. Exiting."
+        set -e
+        echo "Updating version in salutation manifest..."
+        sed -i "s/^\(\s*'version':\s*'\)[0-9.]*\('.*\)$/\1${VERSION_PARTS}\2/" salutation/__manifest__.py || {
+          echo "Failed to update version in salutation manifest!"
           exit 1
-        fi
-        sed -i "s/^\(\s*'version':\s*'\)[0-9.]*\('.*\)$/\1${VERSION_PARTS}\2/" salutation/__manifest__.py
+        }
 
     - name: Update version in salutation_marketing manifest
       run: |
-        if [[ -z "${VERSION_PARTS}" ]]; then
-          echo "VERSION_PARTS not set. Exiting."
+        set -e
+        echo "Updating version in salutation_marketing manifest..."
+        sed -i "s/^\(\s*'version':\s*'\)[0-9.]*\('.*\)$/\1${VERSION_PARTS}\2/" salutation_marketing/__manifest__.py || {
+          echo "Failed to update version in salutation_marketing manifest!"
           exit 1
-        fi
-        sed -i "s/^\(\s*'version':\s*'\)[0-9.]*\('.*\)$/\1${VERSION_PARTS}\2/" salutation_marketing/__manifest__.py
+        }
 
     - name: Create salutation.zip
       run: |
-        if [[ ! -d "salutation" ]]; then
-          echo "Salutation directory does not exist. Exiting."
-          exit 1
-        fi
+        set -e
+        echo "Creating salutation.zip..."
         cd salutation
-        zip -r ../salutation.zip .
-        cd ..
+        zip -r ../salutation.zip . || { 
+          echo "Failed to create salutation.zip!"; 
+          exit 1; 
+        }
 
     - name: Create salutation_marketing.zip
       run: |
-        if [[ ! -d "salutation_marketing" ]]; then
-          echo "Salutation marketing directory does not exist. Exiting."
+        set -e
+        echo "Creating salutation_marketing.zip..."
+        cd salutation_marketing
+        zip -r ../salutation_marketing.zip . || { 
+          echo "Failed to create salutation_marketing.zip!"; 
+          exit 1; 
+        }
+
+    - name: Check zip files
+      run: |
+        set -e
+        if [[ ! -f "salutation.zip" ]] || [[ ! -f "salutation_marketing.zip" ]]; then
+          echo "One or both zip files are missing!"
           exit 1
         fi
-        cd salutation_marketing
-        zip -r ../salutation_marketing.zip .
-        cd ..
 
     - name: Upload salutation.zip
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: salutation.zip
         path: salutation.zip
 
     - name: Upload salutation_marketing.zip
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: salutation_marketing.zip
         path: salutation_marketing.zip
-      
+
     - name: Create GitHub Release
       id: create_release
       uses: actions/github-script@v6
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         script: |
           const version = process.env.VERSION_NAME;
-          if (!version) {
-            throw new Error("VERSION_NAME environment variable not set.");
-          }
+          console.log("Creating release for version:", version);
           const releaseResponse = await github.rest.repos.createRelease({
             owner: context.repo.owner,
             repo: context.repo.repo,
@@ -101,40 +107,66 @@ jobs:
             draft: false,
             prerelease: false
           });
+          console.log("Release created:", releaseResponse.data);
           core.setOutput('upload_url', releaseResponse.data.upload_url);
 
     - name: Upload assets to release
-      uses: actions/github-script@v6
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        UPLOAD_URL: ${{ steps.create_release.outputs.upload_url }}
+      run: |
+        set -e
+        if [[ -z "${UPLOAD_URL}" ]]; then
+          echo "Error: Upload URL not set!"
+          exit 1
+        fi
+
+        echo "Uploading assets to release URL: ${UPLOAD_URL}"
+
+        if [[ ! -f "salutation.zip" ]] || [[ ! -f "salutation_marketing.zip" ]]; then
+          echo "Error: One or both zip files are missing!"
+          exit 1
+        fi
+
+        echo "Both zip files found. Proceeding with upload..."
+
+    - name: Perform Upload
+      env:
+        UPLOAD_URL: ${{ steps.create_release.outputs.upload_url }}
+      uses: actions/github-script@v6
       with:
         script: |
           const fs = require('fs');
-          const uploadUrl = core.getInput('upload_url');
+          const path = require('path');
+          const uploadUrl = process.env.UPLOAD_URL;
+
           if (!uploadUrl) {
-            throw new Error("Upload URL not set.");
+            core.setFailed("Error: Upload URL not set!");
+            process.exit(1);
+          } else {
+            console.log("Upload URL:", uploadUrl);
           }
-
-          const uploadAsset = async (filePath, fileName) => {
+          
+          for (const file of ["salutation.zip", "salutation_marketing.zip"]) {
+            const filePath = path.join(process.cwd(), file);
             if (!fs.existsSync(filePath)) {
-              throw new Error(`${filePath} does not exist.`);
+              core.setFailed(`File not found: ${file}`);
+              process.exit(1);
             }
-
             const fileBuffer = fs.readFileSync(filePath);
-            await github.rest.repos.uploadReleaseAsset({
-              url: uploadUrl,
-              headers: {
-                'content-length': fileBuffer.length,
-                'content-type': 'application/zip'
-              },
-              name: fileName,
-              data: fileBuffer
-            });
-          };
-
-          try {
-            await uploadAsset('salutation.zip', 'salutation.zip');
-            await uploadAsset('salutation_marketing.zip', 'salutation_marketing.zip');
-          } catch (error) {
-            core.setFailed(`Asset upload failed: ${error.message}`);
+            try {
+              await github.rest.repos.uploadReleaseAsset({
+                url: uploadUrl,
+                headers: {
+                  'content-length': fileBuffer.length,
+                  'content-type': 'application/zip'
+                },
+                name: file,
+                data: fileBuffer
+              });
+              console.log(`Successfully uploaded ${file}`);
+            } catch (error) {
+              core.setFailed(`Failed to upload ${file}: ${error.message}`);
+              process.exit(1);
+            }
           }
