@@ -67,29 +67,40 @@ jobs:
 
       - name: Create GitHub Release
         id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: actions/github-script@v6
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          body: |
-            Release for version ${{ github.ref }}.
-          draft: false
-          prerelease: false
+          script: |
+            const version = '${GITHUB_REF}'.replace('refs/tags/', '');
+            const releaseResponse = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: version,
+              name: `Release ${version}`,
+              body: `Release for version ${version}.`,
+              draft: false,
+              prerelease: false
+            });
+            core.setOutput('upload_url', releaseResponse.data.upload_url);
 
-      - name: Upload salutation.zip to release
-        uses: actions/upload-release-asset@v1
+      - name: Upload assets to release
+        uses: actions/github-script@v6
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./salutation.zip
-          asset_name: salutation.zip
-          asset_content_type: application/zip
-
-      - name: Upload salutation_marketing.zip to release
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./salutation_marketing.zip
-          asset_name: salutation_marketing.zip
-          asset_content_type: application/zip
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const uploadUrl = ${{ steps.create_release.outputs.upload_url }};
+            
+            for (const file of ["salutation.zip", "salutation_marketing.zip"]) {
+              const filePath = path.join(process.cwd(), file);
+              const fileBuffer = fs.readFileSync(filePath);
+              
+              await github.repos.uploadReleaseAsset({
+                url: uploadUrl,
+                headers: {
+                  'content-length': fileBuffer.length,
+                  'content-type': 'application/zip'
+                },
+                name: file,
+                data: fileBuffer
+              });
+            }
