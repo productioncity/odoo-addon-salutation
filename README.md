@@ -121,7 +121,7 @@ docker exec -it odoo-addon-salutation_devcontainer-odoo-1 /bin/bash
 Add "marketing_automation" at the end if you are using it.
 
 ```bash
-odoo --database=odoo --db_user=${USER} --db_password=${PASSWORD} --db_host=postgres --db_port=5432 --stop-after-init --no-http -i base,contacts
+odoo --database=odoo --db_user=${USER} --db_password=${PASSWORD} --db_host=${HOST} --db_port=5432 --stop-after-init --no-http -i base,contacts
 exit
 ```
 
@@ -144,7 +144,7 @@ docker exec -it odoo-addon-salutation_devcontainer-odoo-1 /bin/bash
 2. Then, in the container update the addon
 
 ```bash
-odoo --database=odoo --db_user=${USER} --db_password=${PASSWORD} --db_host=postgres --db_port=5432 --stop-after-init --no-http -d odoo -u salutation
+odoo --database=odoo --db_user=${USER} --db_password=${PASSWORD} --db_host=${HOST} --db_port=5432 --stop-after-init --no-http -u salutation
 exit
 ```
 
@@ -165,7 +165,7 @@ docker exec -it odoo-addon-salutation_devcontainer-odoo-1 /bin/bash
 2. Then, in the container update the addon
 
 ```bash
-odoo shell --database=odoo --db_user=${USER} --db_password=${PASSWORD} --db_host=postgres --db_port=5432 --stop-after-init --no-http -d odoo
+odoo shell --database=odoo --db_user=${USER} --db_password=${PASSWORD} --db_host=postgres --db_port=5432 --stop-after-init --no-http
 ```
 
 ### Contributing
