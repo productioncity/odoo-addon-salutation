@@ -2,7 +2,7 @@
 
 # Base directories and specific files to include
 INCLUDE_DIRS=("salutation" "salutation_marketing" ".devcontainer" ".github")
-INCLUDE_FILES=("README.md" "get-enterprise.sh")
+INCLUDE_FILES=("README.md" "get-enterprise.sh" "create_zips.sh")
 
 # Output markdown file
 OUTPUT_FILE="llm.md"
