@@ -1,10 +1,10 @@
 {
     # The name of the addon
-    "name": "salutation_marketing",
+    'name': 'salutation_marketing',
     # A summary of the addon
-    "summary": "Adds salutation fields, given name, and family name fields to marketing automation emails.",
+    'summary': 'Adds salutation fields, given name, and family name fields to marketing automation emails.',
     # A detailed description of the addon
-    "description": """
+    'description': """
     This addon enhances the Marketing Automation module in Odoo by adding the following fields to emails:
     - Salutation
     - Given Name
@@ -12,24 +12,24 @@
 
     """,
     # Author information
-    "author": "Production City",
-    "website": "https://github.com/productioncity/odoo-addon-salutation",
+    'author': 'Production City',
+    'website': 'https://github.com/productioncity/odoo-addon-salutation',
     # The license type for this addon (commercial license)
-    "license": "OPL-1",
+    'license': 'OPL-1',
     # The category and version of the addon
-    "category": "Customizations",
-    "version": "0.10",
+    'category': 'Customizations',
+    'version': '0.12',
     # Dependencies needed for this addon to work correctly
-    "depends": [
-        "base",
-        "contacts",
-        "salutation",
-        "marketing_automation",
+    'depends': [
+        'base',
+        'contacts',
+        'salutation',
+        'marketing_automation',
     ],
     # Data that is always loaded
-    "data": [],
+    'data': [],
     # Data loaded in demonstration mode
-    "demo": [],
+    'demo': [],
     # Image or icon for the addon
-    "images": ["static/description/icon.png"],
+    'images': ['static/description/icon.png'],
 }

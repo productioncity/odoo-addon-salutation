@@ -48,7 +48,8 @@ class MarketingActivityExtension(models.AbstractModel):
                     return fields
 
             # Register the dynamically created MarketingAutomation class
-            MarketingAutomation._build_model(self.env['ir.model'])
+            with self.pool.cursor() as cr:
+                MarketingAutomation._build_model(self.pool, cr)
             _logger.info(
                 "'marketing.activity' model found and extended in salutation.marketing.activity.extension"
             )
