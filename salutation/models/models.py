@@ -126,11 +126,18 @@ class ResPartner(models.Model):
         Returns:
             models.BaseModel: The created ResPartner records.
         """
+
         for vals in vals_list:
             if vals.get('company_type', 'company') == 'person':
+                title_shortcut = ''
+                if 'title' in vals and isinstance(vals['title'], int):
+                    title_rec = self.env['res.partner.title'].browse(vals['title'])
+                    if title_rec.exists():
+                        title_shortcut = title_rec.shortcut
+
                 name_parts = self._generate_name_parts(
-                    vals.get('name', ''), 
-                    vals.get('title', {}).get('shortcut', ''), 
+                    vals.get('name', ''),
+                    title_shortcut,
                     vals.get('lang', '')
                 )
                 if not vals.get('is_given_name_manual', False):
@@ -139,6 +146,7 @@ class ResPartner(models.Model):
                     vals.setdefault('name_family', name_parts['family'])
                 if not vals.get('is_salutation_manual', False):
                     vals.setdefault('name_salutation', name_parts['salutation'])
+
         return super().create(vals_list)
 
     def write(self, vals: Dict[str, Any]) -> bool:
