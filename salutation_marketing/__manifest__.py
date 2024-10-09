@@ -18,7 +18,7 @@
     'license': 'OPL-1',
     # The category and version of the addon
     'category': 'Customizations',
-    'version': '0.13',
+    'version': '18.0.0.1',
     # Dependencies needed for this addon to work correctly
     'depends': [
         'base',
