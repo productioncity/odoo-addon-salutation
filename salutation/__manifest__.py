@@ -24,7 +24,7 @@
 
     # The category and version of the addon
     'category': "Customizations",
-    'version': '17.0.0.14',
+    'version': '16.0.0.1',
 
     # Dependencies needed for this addon to work correctly
     'depends': ['base', 'contacts'],
